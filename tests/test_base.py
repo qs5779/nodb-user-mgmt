@@ -1,5 +1,5 @@
-from project_name.base import NAME
+from nodb_user_mgmt.base import NAME
 
 
 def test_base():
-    assert NAME == "project_name"
+    assert NAME == "nodb_user_mgmt"

@@ -1,4 +1,4 @@
-"""Entry point for project_name."""
+"""Entry point for nodb_user_mgmt."""
 
 from .cli import main  # pragma: no cover
 
