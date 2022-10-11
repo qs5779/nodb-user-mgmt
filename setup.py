@@ -1,7 +1,10 @@
 """Python setup.py for nodb_user_mgmt package"""
 import io
 import os
+
 from setuptools import find_packages, setup
+
+from nodb_user_mgmt import __version__
 
 
 def read(*paths, **kwargs):
@@ -11,7 +14,6 @@ def read(*paths, **kwargs):
     >>> read("README.md")
     ...
     """
-
     content = ""
     with io.open(
         os.path.join(os.path.dirname(__file__), *paths),
@@ -31,7 +33,7 @@ def read_requirements(path):
 
 setup(
     name="nodb_user_mgmt",
-    version=read("nodb_user_mgmt", "VERSION"),
+    version=__version__,
     description="Awesome nodb_user_mgmt created by qs5779",
     url="https://github.com/qs5779/nodb-user-mgmt/",
     long_description=read("README.md"),
@@ -39,8 +41,10 @@ setup(
     author="qs5779",
     packages=find_packages(exclude=["tests", ".github"]),
     install_requires=read_requirements("requirements.txt"),
-    entry_points={
-        "console_scripts": ["nodb_user_mgmt = nodb_user_mgmt.__main__:main"]
-    },
+    entry_points={"console_scripts": ["nodb_user_mgmt = nodb_user_mgmt.cli:main"]},
     extras_require={"test": read_requirements("requirements-test.txt")},
 )
+
+
+if __name__ == "__main__":
+    print(read("nodb_user_mgmt", "__init__.py"))
