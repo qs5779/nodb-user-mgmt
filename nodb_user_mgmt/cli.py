@@ -1,14 +1,18 @@
 from os import getenv
+from pathlib import Path
 from sys import exit
 
 import click
+from dotenv import load_dotenv
 
 from nodb_user_mgmt import __version__
 from nodb_user_mgmt.userinfo import UserInfoMgr
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
-SALT_WARNING = """WARNING: You should provide a secret salt value using
-environment variable NODBUSERMGMT_SALT"""
+SALT_WARNING = """WARNING: You should provide a secret salt value using environment
+variable NODBUSERMGMT_SALT. A default salt value was created and
+saved in {}. Be sure to secure this file appropriately.
+"""
 
 
 def print_version(ctx, param, value):
@@ -18,11 +22,27 @@ def print_version(ctx, param, value):
     ctx.exit()
 
 
-def get_salt():
-    default_salt = "3E^svy6dn^35"
-    salt = getenv("NODBUSERMGMT_SALT", default_salt)
-    if default_salt == salt:
-        print(SALT_WARNING)
+def load_salt(sp, oride=False):
+    assert load_dotenv(dotenv_path=sp, override=oride)
+    salt = getenv("NODBUSERMGMT_SALT", False)
+    if not salt:
+        raise KeyError(f"Failed to find NODBUSERMGMT_SALT in environment or {str(sp)}")
+    return salt
+
+
+def get_salt(psalt):
+    salt = getenv("NODBUSERMGMT_SALT", False)
+    if not salt:
+        if psalt.is_file():
+            salt = load_salt(psalt, False)
+        else:
+            from bcrypt import gensalt
+
+            salt = gensalt().decode()
+            print(SALT_WARNING.format(str(psalt)))
+            with open(psalt, "w") as sf:
+                print(f"NODBUSERMGMT_SALT='{salt}'", file=sf)
+    return salt
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)
@@ -30,11 +50,14 @@ def get_salt():
     "-f",
     "--file",
     "dest",
-    default="./user-info.json",
-    help="Specify user info file. [default ./user-info.json]",
+    default="./ui.json",
+    help="Specify user info file. [default ./ui.json]",
 )
 @click.option(
     "-s", "--saltfile", help="Specify environment file containing NODBUSERMGMT_SALT"
+)
+@click.option(
+    "-v", "--verbose/--no-verbose", default=False, help="Specify verbose flag."
 )
 @click.option(
     "-V",
@@ -46,15 +69,23 @@ def get_salt():
     help="show version and exit",
 )
 @click.pass_context
-def main(ctx, dest):
+def main(ctx, dest, saltfile, verbose):
     """Main function for nodb_user_mgmt module."""
     ctx.ensure_object(dict)
     ctx.obj["dest"] = dest
-    # ctx.obj["output"] = output
-    # ctx.obj["quiet"] = quiet
-    # ctx.obj["refresh"] = refresh
-    # ctx.obj["test"] = test
-    # ctx.obj["verbose"] = verbose
+    ctx.obj["verbose"] = verbose
+    if saltfile is not None:
+        sp = Path(saltfile)
+        if not sp.is_file():
+            import errno
+            import os
+
+            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), saltfile)
+        ctx.obj["salt"] = load_salt(sp)
+    else:
+        dp = Path(dest)
+        sp = dp.parent.joinpath(dp.stem + ".salt")
+        ctx.obj["salt"] = get_salt(sp)
 
 
 @click.command()
@@ -64,7 +95,7 @@ def main(ctx, dest):
 def adduser(ctx, username, password):
     ctx.ensure_object(dict)
     print(ctx)
-    ui = UserInfoMgr(ctx.obj["dest"])
+    ui = UserInfoMgr(ctx.obj["dest"], ctx.obj["salt"], ctx.obj["verbose"])
     ui.adduser(username, password)
 
 
@@ -73,7 +104,7 @@ def adduser(ctx, username, password):
 @click.option("-p", "--password", required=True, help="Specify password.")
 @click.pass_context
 def checkpw(ctx, username, password):
-    ui = UserInfoMgr(ctx.obj["dest"])
+    ui = UserInfoMgr(ctx.obj["dest"], ctx.obj["salt"], ctx.obj["verbose"])
     ui.checkpw(username, password)
 
 
@@ -82,7 +113,7 @@ def checkpw(ctx, username, password):
 @click.option("-p", "--password", required=True, help="Specify password.")
 @click.pass_context
 def upduser(ctx, username, password):
-    ui = UserInfoMgr(ctx.obj["dest"])
+    ui = UserInfoMgr(ctx.obj["dest"], ctx.obj["salt"], ctx.obj["verbose"])
     ui.upduser(username, password)
 
 
@@ -90,14 +121,14 @@ def upduser(ctx, username, password):
 @click.option("-u", "--username", required=True, help="Specify usernmame.")
 @click.pass_context
 def deluser(ctx, username):
-    ui = UserInfoMgr(ctx.obj["dest"])
+    ui = UserInfoMgr(ctx.obj["dest"], ctx.obj["salt"], ctx.obj["verbose"])
     ui.deluser(username)
 
 
 @click.command()
 @click.pass_context
 def show(ctx):
-    ui = UserInfoMgr(ctx.obj["dest"])
+    ui = UserInfoMgr(ctx.obj["dest"], ctx.obj["salt"], ctx.obj["verbose"])
     ui.show()
 
 

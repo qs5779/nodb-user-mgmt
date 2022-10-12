@@ -6,8 +6,10 @@ from pathlib import Path
 
 
 class UserInfo:
-    def __init__(self, fn, salt="3WkFSpP@WBs7"):
+    def __init__(self, fn, salt, verbose):
+        self.saving = False
         self.salt = salt
+        self.verbose = verbose
         self.dirty = False
         self.uipfn = Path(fn)
         self.info = {}
@@ -29,38 +31,32 @@ class UserInfo:
         hashed = base64.b64encode(hashlib.sha256(encoded).digest()).decode()
         return hashed
 
-    def __setpw(self, username, password):
+    def _setpw(self, username, password):
         self.info[username]["pwdhash"] = self.__endigest(password)
         self.dirty = True
         self.save()
 
     def save(self):
         if self.dirty:
-            self.show()
+            self.saving = True
+            if self.verbose:
+                self.show()
             with open(self.uipfn, "w") as fp:
                 json.dump(self.info, fp, indent=2)
             self.dirty = False
+            self.saving = False
 
     def checkpw(self, username, password):
         if username not in self.info:
             raise KeyError(f"username '{username}' does not exist!!!")
         hashed = self.__endigest(password)
         if hashed == self.info[username]["pwdhash"]:
-            print("It Matches!")
-        else:
+            if self.verbose:
+                print("It Matches!")
+            return True
+        if self.verbose:
             print("It Does not Match :(")
-
-    def upduser(self, username, password):
-        if username not in self.info:
-            raise KeyError(f"username '{username}' does not exist!!!")
-        self.__setpw(username, password)
-
-    def deluser(self, username):
-        if username not in self.info:
-            raise KeyError(f"username '{username}' does not exist!!!")
-        del self.info[username]
-        self.dirty = True
-        self.save()
+        return False
 
     def show(self):
         import pprint
@@ -69,4 +65,5 @@ class UserInfo:
         pp.pprint(self.info)
 
     def __del__(self):
-        self.save()
+        if not self.saving:  # avoid extra exception
+            self.save()
