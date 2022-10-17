@@ -20,8 +20,8 @@ original_author="qs5779"
 original_name="nodb_user_mgmt"
 original_urlname="nodb-user-mgmt"
 original_description="Awesome nodb_user_mgmt created by qs5779"
-# for filename in $(find . -name "*.*") 
-for filename in $(git ls-files) 
+# for filename in $(find . -name "*.*")
+for filename in $(git ls-files)
 do
     sed -i "s/$original_author/$author/g" $filename
     sed -i "s/$original_name/$name/g" $filename
