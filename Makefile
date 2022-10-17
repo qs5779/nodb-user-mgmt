@@ -27,14 +27,14 @@ install:          ## Install the project in dev mode.
 .PHONY: fmt
 fmt:              ## Format code using black & isort.
 	$(ENV_PREFIX)isort nodb_user_mgmt/
-	$(ENV_PREFIX)black -l 79 nodb_user_mgmt/
-	$(ENV_PREFIX)black -l 79 tests/
+	$(ENV_PREFIX)black -l 88 nodb_user_mgmt/
+	$(ENV_PREFIX)black -l 88 tests/
 
 .PHONY: lint
 lint:             ## Run pep8, black, mypy linters.
 	$(ENV_PREFIX)flake8 nodb_user_mgmt/
-	$(ENV_PREFIX)black -l 79 --check nodb_user_mgmt/
-	$(ENV_PREFIX)black -l 79 --check tests/
+	$(ENV_PREFIX)black -l 88 --check nodb_user_mgmt/
+	$(ENV_PREFIX)black -l 88 --check tests/
 	$(ENV_PREFIX)mypy --ignore-missing-imports nodb_user_mgmt/
 
 .PHONY: test
