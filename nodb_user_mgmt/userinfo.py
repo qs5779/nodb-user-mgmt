@@ -2,7 +2,7 @@ from nodb_user_mgmt.uibase import UserInfo
 
 
 class UserInfoMgr(UserInfo):
-    def __init__(self, fn, salt, verbose):
+    def __init__(self, fn, salt, verbose=False):
         super().__init__(fn, salt, verbose)
 
     def adduser(self, username, password):

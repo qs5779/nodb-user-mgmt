@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 class UserInfo:
-    def __init__(self, fn, salt, verbose):
+    def __init__(self, fn, salt, verbose=False):
         self.saving = False
         self.salt = salt
         self.verbose = verbose
