@@ -6,7 +6,8 @@ from pathlib import Path
 
 
 class UserInfo:
-    def __init__(self, fn, salt, verbose=False):
+    def __init__(self, fn, salt, verbose=False, logger=None):
+        self.logger = logger
         self.saving = False
         self.salt = salt
         self.verbose = verbose
@@ -22,9 +23,13 @@ class UserInfo:
         else:
             with open(self.uipfn, "r") as fp:
                 self.info = json.load(fp)
+        if self.logger is not None:
+            self.logger.debug(f"salt: {self.salt}")
 
     def __endigest(self, password):
         # Adding salt at the last of the password
+        if self.logger is not None:
+            self.logger.debug(f"salt: {self.salt}")
         salted = password + self.salt
         # Encoding the password
         encoded = salted.encode("utf-8")
@@ -50,12 +55,17 @@ class UserInfo:
         if username not in self.info:
             raise KeyError(f"username '{username}' does not exist!!!")
         hashed = self.__endigest(password)
+        match = "It Matches!"
+        nomatch = "It Does not Match :("
         if hashed == self.info[username]["pwdhash"]:
             if self.verbose:
-                print("It Matches!")
+                print(match)
             return True
         if self.verbose:
-            print("It Does not Match :(")
+            print(nomatch)
+        if self.logger is not None:
+            self.logger.debug(f"username: {username} password: {password}")
+            self.logger.debug(nomatch)
         return False
 
     def show(self):

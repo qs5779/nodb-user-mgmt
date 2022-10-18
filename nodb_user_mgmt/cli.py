@@ -56,6 +56,7 @@ def get_salt(psalt):
 @click.option(
     "-s", "--saltfile", help="Specify environment file containing NODBUSERMGMT_SALT"
 )
+@click.option("-S", "--salt", help="Specify salt value")
 @click.option(
     "-v", "--verbose/--no-verbose", default=False, help="Specify verbose flag."
 )
@@ -69,12 +70,14 @@ def get_salt(psalt):
     help="show version and exit",
 )
 @click.pass_context
-def main(ctx, dest, saltfile, verbose):
+def main(ctx, dest, saltfile, salt, verbose):
     """Main function for nodb_user_mgmt module."""
     ctx.ensure_object(dict)
     ctx.obj["dest"] = dest
     ctx.obj["verbose"] = verbose
-    if saltfile is not None:
+    if salt is not None:
+        ctx.obj["salt"] = salt
+    elif saltfile is not None:
         sp = Path(saltfile)
         if not sp.is_file():
             import errno
@@ -105,7 +108,10 @@ def adduser(ctx, username, password):
 @click.pass_context
 def checkpw(ctx, username, password):
     ui = UserInfoMgr(ctx.obj["dest"], ctx.obj["salt"], ctx.obj["verbose"])
-    ui.checkpw(username, password)
+    if ui.checkpw(username, password):
+        return 0
+    else:
+        return 1
 
 
 @click.command()
