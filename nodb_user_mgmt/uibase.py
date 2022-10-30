@@ -6,24 +6,31 @@ from pathlib import Path
 
 
 class UserInfo:
-    def __init__(self, fn, salt, verbose=False, logger=None):
+    def __init__(self, src, salt, verbose=False, logger=None):
         self.logger = logger
         self.saving = False
         self.salt = salt
         self.verbose = verbose
         self.dirty = False
-        self.uipfn = Path(fn)
-        self.info = {}
-        if not self.uipfn.is_file():
-            if self.uipfn.exists():
-                import errno
-                import os
+        try:
+            self.info = json.loads(src)
+        except json.JSONDecodeError:
+            # if it wasn't good json then maybe it is a file
+            self.uipfn = Path(src)
+            if not self.uipfn.is_file():
+                if self.uipfn.exists():
+                    import errno
+                    import os
 
-                raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), fn)
-        else:
-            with open(self.uipfn, "r") as fp:
-                self.info = json.load(fp)
+                    raise FileNotFoundError(
+                        errno.ENOENT, os.strerror(errno.ENOENT), src
+                    )
+                self.info = {}
+            else:
+                with open(self.uipfn, "r") as fp:
+                    self.info = json.load(fp)
         if self.logger is not None:
+            self.logger.debug(f"number of users: {len(self.info.keys())}")
             self.logger.debug(f"salt: {self.salt}")
 
     def __endigest(self, password):
